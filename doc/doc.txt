@@ -1,0 +1,57 @@
+
+
+MAIN IDEA:
+
+Single player 2D "8 bit" game where the user controls a space ship and the main goal is to dodge and destroy asteroids coming towards it. The ship has a health bar and takes a couple of asteroid hits to be destroyed. Over time the game gets progressively harder with asteroid becoming more faster and harder to destroy. They also start to spawn more frequently and create tighter spaces between them. The ship would also upgrade during the game, with upgrades/rewards/collectables spawning in between the asteroids.
+
+Other than the main gameplay window, there would also be a menu for adjusting Brightness, SFX and Music. There would also be a small but varied collection of ships, with each one having a different design and different shooting mechanic. Ships will be unlockable either by achieving a higher score or b y collecting coins which spawn as a type of a reward.
+
+
+
+
+TECHNOLOGIES:
+
+The game will be written in C using the raylib library. I won't use a game engine.
+
+I chose C, because I have previous experience with C and Embedded C, that's why I feel like I can complete this game in the duration of 4 weeks. 
+
+I chose raylib, because it seems like a beginner friendly version of the SDL library and since I haven't done anything like that before, I think a limited but easier to learn library would be better for this project.
+
+I'm also using Vim as a main code editor. I would not use an IDE, because I want to challenge myself and actually learn how to properly use Vim. I find it very minimalistic and that provides creativity for me.
+
+
+
+GOALS/OBJECTIVES: 
+
+-Learn how to make a game without using a: game engine or an IDE in order to build/improve my skills with a "low level" language and a specified text editor.
+
+-Be able to freely turn a game idea to a working protoype(in a final stage) or in the best case, a finished product.
+
+-Learn how to read and learn using only datasheets, documentations and forums. AI usage should be zero or at least minimal.
+
+
+
+SCOPE: 
+
+What should it be:
+	1. A simple single player game, made to improve skills
+	2. A 4 week project, made to see where I stand as of skills
+
+
+What it is not:
+	1. A fully made game, published in the App Store
+	2. A game that receives updates or is in constant maintenance
+	3. A multiplayer game
+
+
+
+
+REQUIREMENTS:
+
+	1. C 		?
+	2. raylib 	?
+	3. Vim 		?
+
+
+
+
