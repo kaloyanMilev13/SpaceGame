@@ -7,10 +7,10 @@
 #define SCREEN_HEIGHT 500 //625
 
 
-#define SHIP_WIDTH 50 //100
-#define SHIP_HEIGHT 50 //150
+#define SHIP_WIDTH 60 //100
+#define SHIP_HEIGHT 60 //150
 
-//#define ASTER_RADIUS 10
+#define ASTER_RADIUS 25
 #define ASTEROID_HEIGHT 60
 #define ASTEROID_WIDTH 60
 
@@ -27,13 +27,13 @@
 //implement shooting!!! - almost done on 7.09.26
 //implent background - done
 //implement real design - on 4th of september -> png files, maybe draw own
-//implement collision - done
+//implement collision - done; 07.09.2026 - better collision method
 
 
 
 bool gameRunning;
 
-
+//make it a triangle pointing up
 typedef struct {
 
 	int x;
@@ -45,11 +45,12 @@ typedef struct {
 } Player;
 
 
+//make it a circle
 typedef struct {
 
 	int x;
 	int y;
-	//int r;
+	int r;
 	int height;
 	int width;
 	bool isAlive;
@@ -94,14 +95,18 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[]){
 
 	//init asteroids
 	for(int i = 0; i < ASTEROID_COUNT; i++){
-		aster[i].width = ASTEROID_WIDTH - 10;
-		aster[i].height = ASTEROID_HEIGHT- 10;
+
+		aster[i].r = ASTER_RADIUS;
+
+		aster[i].width = ASTEROID_WIDTH;
+		aster[i].height = ASTEROID_HEIGHT;
 		aster[i].isAlive = 1;
 		aster[i].x = rand() % SCREEN_WIDTH;
 		aster[i].y = -(i * 20 + aster[i].height + rand() % 10); //start off screen
 		
-		aster_destination[i].x = aster[i].x;
-		aster_destination[i].y = aster[i].y;
+		aster_destination[i].x = aster[i].x - aster[i].r;
+		aster_destination[i].y = aster[i].y - aster[i].r;
+
 		aster_destination[i].width = aster[i].width;
 		aster_destination[i].height = aster[i].height;
 
@@ -109,15 +114,15 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[]){
 
 
 	//init ship
-	ship->x = SCREEN_WIDTH/2 - SHIP_WIDTH/2;
+	ship->x = (SCREEN_WIDTH/2 - SHIP_WIDTH/2) + SHIP_WIDTH/4; // 400 - 60 + 15
 	ship->y = SCREEN_HEIGHT/2 - SHIP_HEIGHT/2;
-	ship->width = SHIP_WIDTH;
+	ship->width = SHIP_WIDTH/3; // 60 / 3 = 20; 
 	ship->height = SHIP_HEIGHT;
 
-	ship_destination.x = ship->x;
-	ship_destination.y = ship->y;
-	ship_destination.width = ship->width;
-	ship_destination.height = ship->height;
+	ship_destination.x = (float)SCREEN_WIDTH/2 -(float)SHIP_WIDTH/2;
+	ship_destination.y =(float)SCREEN_HEIGHT/2 - (float)SHIP_HEIGHT/2;
+	ship_destination.width = SHIP_WIDTH;
+	ship_destination.height = SHIP_HEIGHT;
 
 
 
@@ -186,7 +191,7 @@ void moveShip(Player *ship){
 	}
 
 
-	ship_destination.x = ship->x;
+	ship_destination.x = ship->x - (float)SHIP_WIDTH/4;
 	ship_destination.y = ship->y;
 
 
@@ -206,8 +211,8 @@ void spawnAsteroids(Obstacle aster[]){
 			aster[i].x = rand() % SCREEN_WIDTH;
 
 
-			aster_destination[i].x = aster[i].x;
-			aster_destination[i].y = aster[i].y;
+			aster_destination[i].x = aster[i].x - aster[i].r;
+			aster_destination[i].y = aster[i].y - aster[i].r;
 
 
 		}
@@ -225,8 +230,8 @@ void moveAsteroids(Obstacle aster[]){
 
 			aster[i].y += 5;
 
-			aster_destination[i].x = aster[i].x;
-			aster_destination[i].y = aster[i].y;
+			aster_destination[i].x = aster[i].x - aster[i].r;
+			aster_destination[i].y = aster[i].y - aster[i].r;
 
 		}else {
 
@@ -290,15 +295,19 @@ void checkCollisions(Player *ship, Obstacle aster[], Projectile proj[]){
 
 	for(int i = 0; i < ASTEROID_COUNT; i++){
 
-		if(aster[i].isAlive && aster[i].x + aster[i].width >= ship->x && aster[i].x <= ship->x + SHIP_WIDTH &&
-				aster[i].y + aster[i].height >= ship->y && aster[i].y <= ship->y + SHIP_HEIGHT){
+		
 
+		//Square detection
+		//if(aster[i].isAlive && aster[i].x + aster[i].width >= ship->x && aster[i].x <= ship->x + SHIP_WIDTH &&
+		//		aster[i].y + aster[i].height >= ship->y && aster[i].y <= ship->y + SHIP_HEIGHT){
+
+
+		//Circle detection
+		if(aster[i].isAlive && aster[i].x + aster[i].r >= ship->x && aster[i].x - aster[i].r <= ship->x + SHIP_WIDTH/4 && 
+				aster[i].y + aster[i].r >= ship->y && aster[i].y - aster[i].r <= ship->y + SHIP_HEIGHT){
 			ship->isAlive = 0;
 			aster[i].isAlive = 0;
-			gameRunning = 0;
-
-
-			WaitTime(1);	
+			gameRunning = 0;	
 		}
 
 
@@ -306,8 +315,8 @@ void checkCollisions(Player *ship, Obstacle aster[], Projectile proj[]){
 
 		for(int j = 0; j < PROJECTILE_COUNT; j++){
 
-			if(proj[j].isAlive && aster[i].isAlive && aster[i].x + aster[i].width >= proj[j].x && aster[i].x <= proj[j].x + PROJECTILE_WIDTH &&
-					aster[i].y + aster[i].height >= proj[j].y && aster[i].y <= proj[j].y + PROJECTILE_HEIGHT){
+			if(proj[j].isAlive && aster[i].isAlive && aster[i].x + aster[i].r >= proj[j].x && aster[i].x - aster[i].r <= proj[j].x + PROJECTILE_WIDTH &&
+					aster[i].y + aster[i].r >= proj[j].y && aster[i].y - aster[i].r <= proj[j].y + PROJECTILE_HEIGHT){
 
 
 				aster[i].isAlive = 0;
@@ -374,7 +383,7 @@ int main(void){
 
 			ClearBackground(BLACK);
 
-			DrawText("GAME OVER!!", SCREEN_WIDTH/2, SCREEN_HEIGHT/2, 20, WHITE);
+			DrawText("GAME OVER!!", SCREEN_WIDTH/2 - 15, SCREEN_HEIGHT/2, 20, WHITE);
 
 
 			if(IsKeyPressed(KEY_R)){
@@ -411,21 +420,22 @@ int main(void){
 			moveProjectile(proj);
 
 			moveAsteroids(aster);
-			
+
 			checkCollisions(&ship, aster, proj);
-			
+	
 			DrawTexturePro(ship_png, ship_source, ship_destination, (Vector2){0, 0}, 0.0f,  WHITE);
-			//DrawRectangle(ship.x, ship.y, SHIP_WIDTH, SHIP_HEIGHT, WHITE);
+			
+			//hitbox
+			DrawRectangle(ship.x, ship.y, ship.width, ship.height, WHITE);
 
 			for(int i = 0; i < ASTEROID_COUNT; i++){
 
 				if(aster[i].isAlive){
-					//DrawTexture(asteroid_png, aster[i].x, aster[i].y, WHITE);
 
 					DrawTexturePro(asteroid_png, aster_source, aster_destination[i], (Vector2){0,0}, 0.0f, WHITE);
 					
-					//DrawRectangle(aster[i].y, aster[i].y, 	ASTEROID_WIDTH, ASTEROID_HEIGHT, WHITE);
-
+					//hitbox
+					DrawCircle(aster[i].x, aster[i].y, aster[i].r, WHITE);	
 
 				}
 			}
@@ -442,9 +452,6 @@ int main(void){
 
 			
 			
-
-
-
 			//DrawRectangle(ship.x, ship.y, ship.width, ship.height, WHITE);
 
 			EndDrawing(); //zatwarqne na chetkata
