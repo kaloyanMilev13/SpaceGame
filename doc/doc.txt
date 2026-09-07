@@ -1,5 +1,4 @@
 
-
 MAIN IDEA:
 
 Single player 2D "8 bit" game where the user controls a space ship and the main goal is to dodge and destroy asteroids coming towards it. The ship has a health bar and takes a couple of asteroid hits to be destroyed. Over time the game gets progressively harder with asteroid becoming more faster and harder to destroy. They also start to spawn more frequently and create tighter spaces between them. The ship would also upgrade during the game, with upgrades/rewards/collectables spawning in between the asteroids.
