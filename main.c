@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdlib.h>
 #include <raylib.h>
 #include <stddef.h>
@@ -20,7 +21,7 @@
 
 
 #define ASTEROID_COUNT  5
-#define PROJECTILE_COUNT 3
+#define PROJECTILE_COUNT 1
 
 
 //implement speed acceleration - 
@@ -32,8 +33,13 @@
 
 
 bool gameRunning;
+unsigned int score = 0;
+unsigned int highscore = 0;
+
+
 
 //make it a triangle pointing up
+//actually decided to keep it a rectangle so that the wings of the rocket are not in the hitbox, only the body - 08.09.2026
 typedef struct {
 
 	int x;
@@ -45,7 +51,7 @@ typedef struct {
 } Player;
 
 
-//make it a circle
+//make it a circle - 07.09.2026
 typedef struct {
 
 	int x;
@@ -58,6 +64,8 @@ typedef struct {
 } Obstacle;
 
 
+//keep it a rectangle; 
+//shpuld add an image to it
 typedef struct {
 
 	int x;
@@ -92,6 +100,7 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[]){
 
 
 	gameRunning = 1;
+	score = 0;
 
 	//init asteroids
 	for(int i = 0; i < ASTEROID_COUNT; i++){
@@ -145,33 +154,33 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[]){
 
 void moveShip(Player *ship){
 
-	if(IsKeyDown(KEY_A)){
+	if(IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)){
 
 		if(ship->x - 5 > 0){
 
-			ship->x -= 5;
+			ship->x -= 6;
 
 		}
 	}
 
 
 
-	if(IsKeyDown(KEY_D)){
+	if(IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)){
 
 		if(ship->x + ship->width + 5 < SCREEN_WIDTH){
 
-			ship->x += 5;
+			ship->x += 6;
 
 		}		
 	}
 
 
 
-	if(IsKeyDown(KEY_S)){
+	if(IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)){
 
 		if(ship->y + ship->height + 5 < SCREEN_HEIGHT){
 
-			ship->y += 5;
+			ship->y += 6;
 
 		}
 
@@ -180,11 +189,11 @@ void moveShip(Player *ship){
 
 
 
-	if(IsKeyDown(KEY_W)){
+	if(IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)){
 
 		if(ship->y - 5 > 0){
 
-			ship->y -= 5;
+			ship->y -= 6;
 
 		}
 
@@ -321,6 +330,7 @@ void checkCollisions(Player *ship, Obstacle aster[], Projectile proj[]){
 
 				aster[i].isAlive = 0;
 				proj[j].isAlive = 0;
+				score++; //not sure
 
 
 			}
@@ -379,12 +389,21 @@ int main(void){
 
 		if(gameRunning == 0){
 
+			if(score >= highscore){
+				highscore = score;
+			}
+
 			BeginDrawing(); //2ri init na samoto risuwane
 
 			ClearBackground(BLACK);
 
 			DrawText("GAME OVER!!", SCREEN_WIDTH/2 - 15, SCREEN_HEIGHT/2, 20, WHITE);
 
+			DrawText("Score: ", SCREEN_WIDTH/2 - 15, SCREEN_HEIGHT/2 + 30, 20, WHITE);
+			DrawText(TextFormat("%u", score), SCREEN_WIDTH/2 + 100, SCREEN_HEIGHT/2 + 30, 20, WHITE);
+
+			DrawText("High Score: ", SCREEN_WIDTH/2 - 15, SCREEN_HEIGHT/2 + 60, 20, WHITE);
+			DrawText(TextFormat("%u", highscore), SCREEN_WIDTH/2 + 140, SCREEN_HEIGHT/2 + 60, 20, WHITE);
 
 			if(IsKeyPressed(KEY_R)){
 				gameRunning = 1;
@@ -426,7 +445,7 @@ int main(void){
 			DrawTexturePro(ship_png, ship_source, ship_destination, (Vector2){0, 0}, 0.0f,  WHITE);
 			
 			//hitbox
-			DrawRectangle(ship.x, ship.y, ship.width, ship.height, WHITE);
+			//DrawRectangle(ship.x, ship.y, ship.width, ship.height, WHITE);
 
 			for(int i = 0; i < ASTEROID_COUNT; i++){
 
@@ -435,7 +454,7 @@ int main(void){
 					DrawTexturePro(asteroid_png, aster_source, aster_destination[i], (Vector2){0,0}, 0.0f, WHITE);
 					
 					//hitbox
-					DrawCircle(aster[i].x, aster[i].y, aster[i].r, WHITE);	
+					//DrawCircle(aster[i].x, aster[i].y, aster[i].r, WHITE);	
 
 				}
 			}
