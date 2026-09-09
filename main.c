@@ -1,7 +1,5 @@
-#include <stdint.h>
 #include <stdlib.h>
 #include <raylib.h>
-#include <stddef.h>
 
 
 #define SCREEN_WIDTH 800 //1000
@@ -31,8 +29,11 @@
 //implement collision - done; 07.09.2026 - better collision method
 
 
+float dt;
+float speed = 360.0f;
 
 bool gameRunning;
+
 unsigned int score = 0;
 unsigned int highscore = 0;
 
@@ -42,10 +43,12 @@ unsigned int highscore = 0;
 //actually decided to keep it a rectangle so that the wings of the rocket are not in the hitbox, only the body - 08.09.2026
 typedef struct {
 
-	int x;
-	int y;
+	float x;
+	float y;
+
 	int width;
-	int height;
+	int height
+		;
 	bool isAlive;
 
 } Player;
@@ -123,8 +126,8 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[]){
 
 
 	//init ship
-	ship->x = (SCREEN_WIDTH/2 - SHIP_WIDTH/2) + SHIP_WIDTH/4; // 400 - 60 + 15
-	ship->y = SCREEN_HEIGHT/2 - SHIP_HEIGHT/2;
+	ship->x =(((float)SCREEN_WIDTH/2 - (float)SHIP_WIDTH/2) + (float)SHIP_WIDTH/4); // 400 - 60 + 15
+	ship->y = (float)SCREEN_HEIGHT/2 - (float)SHIP_HEIGHT/2;
 	ship->width = SHIP_WIDTH/3; // 60 / 3 = 20; 
 	ship->height = SHIP_HEIGHT;
 
@@ -152,13 +155,16 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[]){
 }
 
 
-void moveShip(Player *ship){
+void moveShip(Player *ship, float dt){
+
+	float dx = 0.0f;
+	float dy = 0.0f;
 
 	if(IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)){
 
 		if(ship->x - 5 > 0){
 
-			ship->x -= 6;
+			dx -= 1.0f;
 
 		}
 	}
@@ -167,20 +173,20 @@ void moveShip(Player *ship){
 
 	if(IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)){
 
-		if(ship->x + ship->width + 5 < SCREEN_WIDTH){
+		if(ship->x + ship->width < SCREEN_WIDTH){
 
-			ship->x += 6;
-
-		}		
+			dx += 1.0f;
+		}
+				
 	}
 
 
 
 	if(IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)){
 
-		if(ship->y + ship->height + 5 < SCREEN_HEIGHT){
+		if(ship->y + ship->height < SCREEN_HEIGHT){
 
-			ship->y += 6;
+			dy += 1.0f;
 
 		}
 
@@ -191,14 +197,18 @@ void moveShip(Player *ship){
 
 	if(IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)){
 
-		if(ship->y - 5 > 0){
+		if(ship->y > 0){
 
-			ship->y -= 6;
+			dy -= 1.0f ;
 
 		}
 
 	}
 
+
+
+	ship->x += dx * speed * dt; // direction on x * speed * time
+	ship->y += dy * speed * dt; //direction on y * speed * time since last frame
 
 	ship_destination.x = ship->x - (float)SHIP_WIDTH/4;
 	ship_destination.y = ship->y;
@@ -263,7 +273,7 @@ void shootWeapon(Projectile proj[], Player *ship){
 			if(proj[i].isAlive == 0){
 
 				proj[i].isAlive = 1;
-				proj[i].x = ship->x + SHIP_WIDTH/4;
+				proj[i].x = ship->x + (float)SHIP_WIDTH/4;
 				proj[i].y = ship->y;
 
 
@@ -312,7 +322,7 @@ void checkCollisions(Player *ship, Obstacle aster[], Projectile proj[]){
 
 
 		//Circle detection
-		if(aster[i].isAlive && aster[i].x + aster[i].r >= ship->x && aster[i].x - aster[i].r <= ship->x + SHIP_WIDTH/4 && 
+		if(aster[i].isAlive && aster[i].x + aster[i].r >= ship->x && aster[i].x - aster[i].r <= ship->x + (float)SHIP_WIDTH/4 && 
 				aster[i].y + aster[i].r >= ship->y && aster[i].y - aster[i].r <= ship->y + SHIP_HEIGHT){
 			ship->isAlive = 0;
 			aster[i].isAlive = 0;
@@ -431,8 +441,10 @@ int main(void){
 			//check collision
 
 			spawnAsteroids(aster);
-
-			moveShip(&ship);
+			
+			//dt is the delta time, made to make movement independent of FPS
+			dt = GetFrameTime();
+			moveShip(&ship, dt);
 
 			shootWeapon(proj, &ship);
 
@@ -468,7 +480,10 @@ int main(void){
 
 				}
 			}
+				
 
+			DrawText("Score: ", 650, 5, 20, WHITE);
+			DrawText(TextFormat("%u", score), 750, 5, 20, WHITE);
 			
 			
 			//DrawRectangle(ship.x, ship.y, ship.width, ship.height, WHITE);
@@ -483,6 +498,9 @@ int main(void){
 	}
 
 	UnloadTexture(background);
+	UnloadTexture(ship_png);
+	UnloadTexture(asteroid_png);
+	UnloadTexture(proj_png);
 	CloseWindow();
 
 

@@ -5,7 +5,10 @@ bin/
 *.out
 
 # Executables
+main
+main.exe
 spacegame
+spacegame.exe
 game
 
 # Debug files
