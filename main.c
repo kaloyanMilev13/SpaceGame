@@ -1,3 +1,4 @@
+#include <complex.h>
 #include <stdlib.h>
 #include <raylib.h>
 
@@ -14,12 +15,14 @@
 #define ASTEROID_WIDTH 60
 
 
-#define PROJECTILE_WIDTH 5
-#define PROJECTILE_HEIGHT 5
+#define PROJECTILE_WIDTH 10
+#define PROJECTILE_HEIGHT 20
 
 
 #define ASTEROID_COUNT  5
 #define PROJECTILE_COUNT 1
+
+#define DIFFICULTY_INDEX 7.0f 
 
 
 //implement speed acceleration - 
@@ -30,7 +33,7 @@
 
 
 float dt;
-float speed = 360.0f;
+
 
 bool gameRunning;
 
@@ -47,8 +50,10 @@ typedef struct {
 	float y;
 
 	int width;
-	int height
-		;
+	int height;
+
+	float speed;
+
 	bool isAlive;
 
 } Player;
@@ -58,10 +63,15 @@ typedef struct {
 typedef struct {
 
 	int x;
+
 	int y;
 	int r;
+
 	int height;
 	int width;
+
+	float speed;
+
 	bool isAlive;
 
 } Obstacle;
@@ -73,8 +83,10 @@ typedef struct {
 
 	int x;
 	int y;
+
 	int width;
 	int height;
+
 	bool isAlive;
 
 } Projectile;
@@ -108,6 +120,8 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[]){
 	//init asteroids
 	for(int i = 0; i < ASTEROID_COUNT; i++){
 
+		aster[i].speed = 300.0f;
+
 		aster[i].r = ASTER_RADIUS;
 
 		aster[i].width = ASTEROID_WIDTH;
@@ -126,6 +140,7 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[]){
 
 
 	//init ship
+	ship->speed = 360.0f;
 	ship->x =(((float)SCREEN_WIDTH/2 - (float)SHIP_WIDTH/2) + (float)SHIP_WIDTH/4); // 400 - 60 + 15
 	ship->y = (float)SCREEN_HEIGHT/2 - (float)SHIP_HEIGHT/2;
 	ship->width = SHIP_WIDTH/3; // 60 / 3 = 20; 
@@ -155,14 +170,14 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[]){
 }
 
 
-void moveShip(Player *ship, float dt){
+void moveShip(Player *ship, float dt,  unsigned int *score){
 
 	float dx = 0.0f;
 	float dy = 0.0f;
 
 	if(IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)){
 
-		if(ship->x - 5 > 0){
+		if(ship->x > 0){
 
 			dx -= 1.0f;
 
@@ -206,9 +221,8 @@ void moveShip(Player *ship, float dt){
 	}
 
 
-
-	ship->x += dx * speed * dt; // direction on x * speed * time
-	ship->y += dy * speed * dt; //direction on y * speed * time since last frame
+	ship->x += dx * (ship->speed + *score * DIFFICULTY_INDEX) * dt; // direction on x * (speed + speed increase)* time
+	ship->y += dy * (ship->speed + *score * DIFFICULTY_INDEX) * dt; //direction on y * (speed + speed increasment)* time since last frame
 
 	ship_destination.x = ship->x - (float)SHIP_WIDTH/4;
 	ship_destination.y = ship->y;
@@ -241,13 +255,13 @@ void spawnAsteroids(Obstacle aster[]){
 }
 
 
-void moveAsteroids(Obstacle aster[]){
+void moveAsteroids(Obstacle aster[], float dt, unsigned int *score){
 
 	for(int i = 0; i < ASTEROID_COUNT; i++){
 
 		if(aster[i].y + aster[i].height  < SCREEN_HEIGHT){
 
-			aster[i].y += 5;
+			aster[i].y += (aster[i].speed + *score * DIFFICULTY_INDEX) * dt;
 
 			aster_destination[i].x = aster[i].x - aster[i].r;
 			aster_destination[i].y = aster[i].y - aster[i].r;
@@ -304,6 +318,7 @@ void moveProjectile(Projectile proj[]){
 			proj[i].isAlive = 0;
 
 		}
+
 
 	}
 
@@ -384,7 +399,7 @@ int main(void){
 	Texture2D asteroid_png = LoadTexture("img/asteroid.png");
 	aster_source = (Rectangle){0, 0, asteroid_png.width, asteroid_png.height};
 
-	Texture2D proj_png = LoadTexture("img/projectile.png");
+	Texture2D proj_png = LoadTexture("img/laser.png");
 	proj_source = (Rectangle){0, 0, proj_png.width, proj_png.height};
 
 
@@ -426,6 +441,7 @@ int main(void){
 
 		}else if(gameRunning){
 
+			
 
 			BeginDrawing(); //2ri init na samoto risuwane
 
@@ -444,13 +460,13 @@ int main(void){
 			
 			//dt is the delta time, made to make movement independent of FPS
 			dt = GetFrameTime();
-			moveShip(&ship, dt);
+			moveShip(&ship, dt, &score);
 
 			shootWeapon(proj, &ship);
 
 			moveProjectile(proj);
 
-			moveAsteroids(aster);
+			moveAsteroids(aster, dt, &score);
 
 			checkCollisions(&ship, aster, proj);
 	
@@ -475,8 +491,12 @@ int main(void){
 			for(int i = 0; i < PROJECTILE_COUNT; i++){
 
 				if(proj[i].isAlive){
+					//hitbox
+					//DrawRectangle(proj[i].x, proj[i].y, proj[i].width, proj[i].height, WHITE);
 
-					DrawRectangle(proj[i].x, proj[i].y, proj[i].width, proj[i].height, WHITE);
+
+					//image
+					DrawTexturePro(proj_png, proj_source, proj_destination[i], (Vector2){0, 0}, 0.0f,  WHITE);
 
 				}
 			}
