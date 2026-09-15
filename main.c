@@ -155,7 +155,7 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[], Obstacle *r
 
 	//init ship
 	ship->isAlive = 1;
-	ship->speed = 360.0f;
+	ship->speed = 380.0f;
 	ship->x =(((float)SCREEN_WIDTH/2 - (float)SHIP_WIDTH/2) + (float)SHIP_WIDTH/4); // 400 - 60 + 15
 	ship->y = (float)SCREEN_HEIGHT/2 - (float)SHIP_HEIGHT/2;
 	ship->width = SHIP_WIDTH/3; // 60 / 3 = 20; 
@@ -261,8 +261,14 @@ void moveShip(Player *ship, float dt,  unsigned int *score){
 	ship->x += dx * (ship->speed + *score * DIFFICULTY_INDEX) * dt; // direction on x * (speed + speed increase)* time
 	ship->y += dy * (ship->speed + *score * DIFFICULTY_INDEX) * dt; //direction on y * (speed + speed increasment)* time since last frame
 
-	ship_destination.x = ship->x - (float)SHIP_WIDTH/4;
-	ship_destination.y = ship->y;
+	//old
+	//ship_destination.x = ship->x - (float)SHIP_WIDTH/4;
+	//ship_destination.y = ship->y;
+
+	//new
+	ship_destination.x = ship->x + ship->width / 2.0f;
+	ship_destination.y = ship->y + ship->height / 2.0f;
+	
 
 	if(!(dx == 0 && dy == 0)){
 
@@ -345,7 +351,7 @@ void shootWeapon(Projectile proj[], Player *ship){
 			if(proj[i].isAlive == 0){
 
 				proj[i].isAlive = 1;
-				proj[i].x = ship->x + (float)SHIP_WIDTH/4;
+				proj[i].x = ship->x + ship->width / 2.0f;
 				proj[i].y = ship->y;
 
 
@@ -388,8 +394,8 @@ void moveReward(Obstacle *reward, float dt){
 
 		reward->y += reward->speed * dt;
 
-		reward_destination.x = reward->x - reward->r;
-		reward_destination.y = reward->y - reward->r;
+		reward_destination.x = reward->x;
+		reward_destination.y = reward->y;
 
 	}else{
 		reward->isAlive = 0;
@@ -407,8 +413,8 @@ void checkCollisions(Player *ship, Obstacle aster[], Projectile proj[], Obstacle
 
 
 		//Circle detection - asteroid and ship
-		if(aster[i].isAlive && aster[i].x + aster[i].r >= ship->x && aster[i].x - aster[i].r <= ship->x + (float)SHIP_WIDTH/4 && 
-				aster[i].y + aster[i].r >= ship->y && aster[i].y - aster[i].r <= ship->y + SHIP_HEIGHT){
+		if(aster[i].isAlive && aster[i].x + aster[i].r >= ship->x && aster[i].x - aster[i].r <= ship->x + ship->width  && 
+				aster[i].y + aster[i].r >= ship->y && aster[i].y - aster[i].r <= ship->y + ship->height){
 			ship->isAlive = 0;
 			aster[i].isAlive = 0;
 			gameRunning = 0;	
@@ -435,14 +441,40 @@ void checkCollisions(Player *ship, Obstacle aster[], Projectile proj[], Obstacle
 	}
 
 
-	if(reward->isAlive && ship->isAlive && reward->x + reward->r >= ship->x && reward->x - reward->r <= ship->x + (float)SHIP_WIDTH/4 &&
-			reward->y + reward->r >= ship->y && reward->y - reward->r <= ship->y + SHIP_HEIGHT){
+	if(reward->isAlive && ship->isAlive && reward->x + reward->r >= ship->x && reward->x - reward->r <= ship->x + ship->width &&
+			reward->y + reward->r >= ship->y && reward->y - reward->r <= ship->y + ship->height){
 
 		reward->isAlive = 0;
 		score += 20;
 
 	}
 
+
+}
+
+
+void gameOverMenu(){
+
+	if(score >= highscore){
+		highscore = score;
+	}
+
+	BeginDrawing();
+
+	ClearBackground(BLACK);
+
+	DrawText("GAME OVER!!", 80, 50, 100, WHITE);
+
+	DrawText("Score: ", 200, 200, 50, WHITE);
+	DrawText(TextFormat("%u", score), 600, 200, 50, WHITE);
+
+	DrawText("High Score: ", 200, 250, 50, WHITE);
+	DrawText(TextFormat("%u", highscore), 600, 250, 50, WHITE);
+
+
+	DrawText("Press R To Restart", 240, 400, 30, WHITE);
+
+	EndDrawing();
 
 }
 
@@ -471,7 +503,7 @@ int main(void){
 
 
 	//Load Textures
-	Texture2D background = LoadTexture("img/background.png");
+	Texture2D background = LoadTexture("img/background6.png");
 
 	Texture2D ship_png = LoadTexture("img/ship.png");
 	ship_source = (Rectangle){0, 0, ship_png.width, ship_png.height};
@@ -494,21 +526,8 @@ int main(void){
 
 		if(gameRunning == 0){
 
-			if(score >= highscore){
-				highscore = score;
-			}
-
-			BeginDrawing(); //2ri init na samoto risuwane
-
-			ClearBackground(BLACK);
-
-			DrawText("GAME OVER!!", SCREEN_WIDTH/2 - 15, SCREEN_HEIGHT/2, 20, WHITE);
-
-			DrawText("Score: ", SCREEN_WIDTH/2 - 15, SCREEN_HEIGHT/2 + 30, 20, WHITE);
-			DrawText(TextFormat("%u", score), SCREEN_WIDTH/2 + 100, SCREEN_HEIGHT/2 + 30, 20, WHITE);
-
-			DrawText("High Score: ", SCREEN_WIDTH/2 - 15, SCREEN_HEIGHT/2 + 60, 20, WHITE);
-			DrawText(TextFormat("%u", highscore), SCREEN_WIDTH/2 + 140, SCREEN_HEIGHT/2 + 60, 20, WHITE);
+			
+			gameOverMenu();
 
 			if(IsKeyPressed(KEY_R)){
 				gameRunning = 1;
@@ -516,7 +535,7 @@ int main(void){
 			}
 
 
-			EndDrawing(); //zatwarqne na chetkata
+			
 
 
 		}else if(gameRunning){
@@ -556,7 +575,7 @@ int main(void){
 
 			//Draw Ship
 			//hitbox
-			//DrawRectangle(ship.x, ship.y, ship.width, ship.height, WHITE);
+			DrawRectangle(ship.x, ship.y, ship.width, ship.height, WHITE);
 			DrawTexturePro(ship_png, ship_source, ship_destination, (Vector2){(float)SHIP_WIDTH/2, (float)SHIP_HEIGHT/2}, ship.angle,  WHITE);
 
 
@@ -577,6 +596,7 @@ int main(void){
 			if(reward.isAlive){
 
 				//Draw Reward
+				//DrawCircle(reward.x, reward.y, reward.r, WHITE);	
 				DrawTexturePro(rew_png, reward_source, reward_destination, (Vector2){(float)REWARD_WIDTH/2, (float)REWARD_HEIGHT/2}, rotation, WHITE);	
 
 			}

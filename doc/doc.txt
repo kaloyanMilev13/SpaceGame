@@ -1,4 +1,29 @@
 
+
+LO1
+Upload your workshop/living document. Add a short explanation: “These activities helped me explore different ICT topics. Based on this, I am currently interested in game development / software engineering / lower-level programming.”
+
+LO2
+Upload your analysis document, design document, code/demo, and later test results. This is your product evidence.
+
+LO3
+Upload a short “project decisions and scope updates” document. This can include:
+- why the menu is not Must/Should;
+- why Game Over screen is more important for the core game;
+- why you chose C/raylib;
+- how you changed requirements after feedback/research;
+- how you planned the remaining work.
+
+LO4
+Upload feedback summaries and a short reflection after each one:
+- What feedback did I ask for?
+- What feedback did I receive?
+- What did I change because of it?
+- What do I still need to improve?
+The most important thing: do not upload only the document. Add a small explanation when uploading, like:
+I upload this under LO3 because it shows how I adjusted my scope and priorities after reviewing the assignment and feedback. I decided to focus on the core gameplay loop and Game Over screen before optional menu features.
+
+
 MAIN IDEA:
 
 Single player 2D "8 bit" game where the user controls a space ship and the main goal is to dodge and destroy asteroids coming towards it. The ship has a health bar and takes a couple of asteroid hits to be destroyed. Over time the game gets progressively harder with asteroid becoming more faster and harder to destroy. They also start to spawn more frequently and create tighter spaces between them. The ship would also upgrade during the game, with upgrades/rewards/collectables spawning in between the asteroids.
@@ -50,7 +75,18 @@ REQUIREMENTS:
 	1. C 		?
 	2. raylib 	?
 	3. Vim 		?
+	
+	
+	
+	
+Updates before week 3:
 
+1. Adding a row in requirements for game over menu, because i saw that this was something i missed in the initial analysis
+2. Addng a section about technical details, which links another document, containing technical details such as comparisons and specific choices
+3. Making a technical comparsons document prototype, linked to the analysis document
+4. Fixing the SMART goal table, after receiving the checkpoint 3 feedback from Iman. The fix consists of 
+changing the "Measurable" row, because it had circular logic with the reuirements. The goal should be defined first and after that the requirements, this way the logic becomes: measurable succes is an observable player experience and the requirements are the things needed to create that experience. 
+5. Making a plan.txt which has the steps and deadlines needed for the next 2 weeks. It will have all of the small goals in codewriting and making documents
 
 
 
