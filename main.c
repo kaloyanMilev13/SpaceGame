@@ -1,3 +1,4 @@
+#include <complex.h>
 #include <stdlib.h>
 #include <raylib.h>
 #include <math.h>
@@ -261,10 +262,6 @@ void moveShip(Player *ship, float dt,  unsigned int *score){
 	ship->x += dx * (ship->speed + *score * DIFFICULTY_INDEX) * dt; // direction on x * (speed + speed increase)* time
 	ship->y += dy * (ship->speed + *score * DIFFICULTY_INDEX) * dt; //direction on y * (speed + speed increasment)* time since last frame
 
-	//old
-	//ship_destination.x = ship->x - (float)SHIP_WIDTH/4;
-	//ship_destination.y = ship->y;
-
 	//new
 	ship_destination.x = ship->x + ship->width / 2.0f;
 	ship_destination.y = ship->y + ship->height / 2.0f;
@@ -453,7 +450,7 @@ void checkCollisions(Player *ship, Obstacle aster[], Projectile proj[], Obstacle
 }
 
 
-void gameOverMenu(){
+void gameOverMenu(Texture2D *background, float *backgroundY, float *backgroundSpeed){
 
 	if(score >= highscore){
 		highscore = score;
@@ -462,6 +459,15 @@ void gameOverMenu(){
 	BeginDrawing();
 
 	ClearBackground(BLACK);
+
+	*backgroundY += *backgroundSpeed * GetFrameTime(); // S = V*T
+			
+	*backgroundY = fmodf(*backgroundY, (float)background->height);
+
+	DrawTexture(*background, 0, (int)*backgroundY, WHITE);
+	DrawTexture(*background, 0, (int)*backgroundY - background->height, WHITE);
+
+
 
 	DrawText("GAME OVER!!", 80, 50, 100, WHITE);
 
@@ -483,10 +489,12 @@ int main(void){
 
 	float rotation;
 
+	float backgroundY = 0.0f;
+	float backgroundSpeed = 40.0f;
+
 	//INIT WINDOW
 	InitWindow(SCREEN_WIDTH,SCREEN_HEIGHT, "SpaceGame"); //init
 	SetTargetFPS(60); //set fps
-
 
 
 	//INIT OBJECTS
@@ -522,12 +530,10 @@ int main(void){
 	while(!WindowShouldClose()){
 
 
-
-
 		if(gameRunning == 0){
 
 			
-			gameOverMenu();
+			gameOverMenu(&background, &backgroundY, &backgroundSpeed);
 
 			if(IsKeyPressed(KEY_R)){
 				gameRunning = 1;
@@ -545,8 +551,14 @@ int main(void){
 			BeginDrawing(); //2ri init na samoto risuwane
 
 			ClearBackground(BLACK);//set background color
+			
+			backgroundY += (backgroundSpeed + score * DIFFICULTY_INDEX) * GetFrameTime(); // S = V*T
+			
+			backgroundY = fmodf(backgroundY, (float)background.height); //towa prawi copy 1 da se wurne ot nachalo, a copy 2 da zastane pak nad nego; ne razbiram bash kak stawa, no copy 1 winagi trugwa ot nachaloto do kraq, a ne si smenqt mestata s copy 2
 
-			DrawTexture(background, 0, 0, WHITE);
+
+			DrawTexture(background, 0, (int)backgroundY, WHITE);
+			DrawTexture(background, 0, (int)backgroundY - background.height, WHITE);
 
 			//spawn asteroids
 			//move ship
@@ -575,7 +587,7 @@ int main(void){
 
 			//Draw Ship
 			//hitbox
-			DrawRectangle(ship.x, ship.y, ship.width, ship.height, WHITE);
+			//DrawRectangle(ship.x, ship.y, ship.width, ship.height, WHITE);
 			DrawTexturePro(ship_png, ship_source, ship_destination, (Vector2){(float)SHIP_WIDTH/2, (float)SHIP_HEIGHT/2}, ship.angle,  WHITE);
 
 
