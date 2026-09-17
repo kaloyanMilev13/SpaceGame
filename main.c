@@ -27,6 +27,7 @@
 #define PROJECTILE_COUNT 1
 
 #define DIFFICULTY_INDEX 7.0f
+#define REWARD_COOLDOWN 10.0f;
 
 //gymnasium frama foundation
 //hugging face lerobot
@@ -42,14 +43,15 @@
 float dt;
 
 bool gameRunning;
+bool inMenu = 0;
+bool gameMode = 1;
 
 unsigned int score = 0;
 unsigned int highscore = 0;
 
 float now;
 float lastTime = 0;
-float rewardCooldown = 10.0f;
-
+float rewardCooldown = REWARD_COOLDOWN;
 
 
 //circle
@@ -94,7 +96,7 @@ typedef struct {
 	//to remember the direction and not rotate with the ship
 	float dx;
 	float dy;
-	
+
 	float angle;
 
 	float speed;
@@ -155,18 +157,18 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[], Obstacle *r
 	ship->isAlive = 1;
 	ship->speed = 380.0f;
 
-// 	for rect ship	
-//	ship->x =(((float)SCREEN_WIDTH/2 - (float)SHIP_WIDTH/2) + (float)SHIP_WIDTH/4); // 400 - 60 + 15
-//	ship->y = (float)SCREEN_HEIGHT/2 - (float)SHIP_HEIGHT/2;
+	// 	for rect ship	
+	//	ship->x =(((float)SCREEN_WIDTH/2 - (float)SHIP_WIDTH/2) + (float)SHIP_WIDTH/4); // 400 - 60 + 15
+	//	ship->y = (float)SCREEN_HEIGHT/2 - (float)SHIP_HEIGHT/2;
 
 	ship->x = (float)SCREEN_WIDTH/2;
 	ship->y = (float)SCREEN_HEIGHT/2 - SHIP_RADIUS*2;
 
 	ship->angle = 0;
 
-// 	for rect ship
-//	ship_destination.x = (float)SCREEN_WIDTH/2 -(float)SHIP_WIDTH/2;
-//	ship_destination.y =(float)SCREEN_HEIGHT/2 - (float)SHIP_HEIGHT/2;
+	// 	for rect ship
+	//	ship_destination.x = (float)SCREEN_WIDTH/2 -(float)SHIP_WIDTH/2;
+	//	ship_destination.y =(float)SCREEN_HEIGHT/2 - (float)SHIP_HEIGHT/2;
 
 	ship_destination.x = ship->x - ship->r;
 	ship_destination.y = ship->y - ship->r;
@@ -179,7 +181,7 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[], Obstacle *r
 	//init projectile
 	for(int i = 0; i < PROJECTILE_COUNT; i++){
 		proj[i].isAlive = 0;
-		proj[i].speed = 600.0f;
+		proj[i].speed = 800.0f;
 		proj_destination[i].x = proj[i].x;
 		proj_destination[i].y = proj[i].y;
 		proj_destination[i].width = PROJECTILE_WIDTH;
@@ -213,6 +215,7 @@ void moveShip(Player *ship, float dt,  unsigned int *score){
 
 	float dx = 0.0f;
 	float dy = 0.0f;
+
 
 	if(IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)){
 
@@ -266,17 +269,26 @@ void moveShip(Player *ship, float dt,  unsigned int *score){
 	//new for rect
 	//ship_destination.x = ship->x + ship->width / 2.0f;
 	//ship_destination.y = ship->y + ship->height / 2.0f;
-	
+
 	//dest for a circle ship
 	ship_destination.x = ship->x;
 	ship_destination.y = ship->y;
-	
 
-	if(!(dx == 0 && dy == 0)){
 
-		ship->angle = (atan2(dx, -dy)) * 180.0 / PI;
-	
+	if(gameMode == 1){
+
+		if(!(dx == 0 && dy == 0)){
+
+			ship->angle = (atan2(dx, -dy)) * 180.0 / PI;
+
+		}
+
+	}else if(gameMode == 0){
+
+		ship->angle = 0;
+
 	}
+
 
 
 
@@ -360,7 +372,7 @@ void shootWeapon(Projectile proj[], Player *ship){
 				proj[i].angle = ship->angle;
 
 				float rad = proj[i].angle * DEG2RAD;
-				
+
 				proj[i].dx = sinf(rad);
 				proj[i].dy = -cosf(rad);
 
@@ -463,6 +475,18 @@ void checkCollisions(Player *ship, Obstacle aster[], Projectile proj[], Obstacle
 }
 
 
+void gameMenu(){
+
+	BeginDrawing();
+
+	DrawText("Game Menu", 200, 200, 50, WHITE);
+
+	EndDrawing();
+
+
+}
+
+
 void gameOverMenu(Texture2D *background, float *backgroundY, float *backgroundSpeed){
 
 	if(score >= highscore){
@@ -474,7 +498,7 @@ void gameOverMenu(Texture2D *background, float *backgroundY, float *backgroundSp
 	//ClearBackground(BLACK);
 
 	*backgroundY += *backgroundSpeed * GetFrameTime(); // S = V*T
-			
+
 	*backgroundY = fmodf(*backgroundY, (float)background->height);
 
 	DrawTexture(*background, 0, (int)*backgroundY, WHITE);
@@ -542,116 +566,133 @@ int main(void){
 
 	while(!WindowShouldClose()){
 
+		if(IsKeyPressed(KEY_M)){
 
-		if(gameRunning == 0){
-
-			
-			gameOverMenu(&background, &backgroundY, &backgroundSpeed);
-
-			if(IsKeyPressed(KEY_R)){
-				gameRunning = 1;
-				setGameStart(&ship, aster, proj, &reward);
-			}
-
-
-			
-
-
-		}else if(gameRunning){
-
-			rotation += 5;
-
-			BeginDrawing(); //2ri init na samoto risuwane
-
-			ClearBackground(BLACK);//set background color
-			
-			backgroundY += (backgroundSpeed + score * DIFFICULTY_INDEX) * GetFrameTime(); // S = V*T
-			
-			backgroundY = fmodf(backgroundY, (float)background.height); //towa prawi copy 1 da se wurne ot nachalo, a copy 2 da zastane pak nad nego; ne razbiram bash kak stawa, no copy 1 winagi trugwa ot nachaloto do kraq, a ne si smenqt mestata s copy 2
-
-
-			DrawTexture(background, 0, (int)backgroundY, WHITE);
-			DrawTexture(background, 0, (int)backgroundY - background.height, WHITE);
-
-			//spawn asteroids
-			//move ship
-			//check for shooting
-			//move proj
-			//move asteroids
-			//check collision
-
-			spawnObstacles(aster, &reward);
-
-			//dt is the delta time, made to make movement independent of FPS, get time since last frame:
-			dt = GetFrameTime();
-
-			moveShip(&ship, dt, &score);
-
-			shootWeapon(proj, &ship);
-
-			moveProjectile(proj, dt);
-
-			moveAsteroids(aster, dt, &score);
-
-			moveReward(&reward, dt);
-
-			checkCollisions(&ship, aster, proj, &reward);
-
-
-			//Draw Ship
-			//hitbox
-			//DrawCircle(ship.x, ship.y, ship.r, WHITE);
-			DrawTexturePro(ship_png, ship_source, ship_destination, (Vector2){(float)SHIP_WIDTH/2, (float)SHIP_HEIGHT/2}, ship.angle,  WHITE);
-
-
-			//Draw Asteroids
-			for(int i = 0; i < ASTEROID_COUNT; i++){
-
-				if(aster[i].isAlive){
-
-					//hitbox
-					//DrawCircle(aster[i].x, aster[i].y, aster[i].r, WHITE);	
-					DrawTexturePro(asteroid_png, aster_source, aster_destination[i], (Vector2){(float)ASTEROID_WIDTH/2, (float)ASTEROID_HEIGHT/2}, 0.0f, WHITE);
-
-
-				}
-			}
-
-
-			if(reward.isAlive){
-
-				//Draw Reward
-				//DrawCircle(reward.x, reward.y, reward.r, WHITE);	
-				DrawTexturePro(rew_png, reward_source, reward_destination, (Vector2){(float)REWARD_WIDTH/2, (float)REWARD_HEIGHT/2}, rotation, WHITE);	
-
-			}
-
-
-			//Draw Projectile
-			for(int i = 0; i < PROJECTILE_COUNT; i++){
-
-				if(proj[i].isAlive){
-
-					//hitbox
-					//DrawRectangle(proj[i].x, proj[i].y, proj[i].width, proj[i].height, WHITE);
-					DrawTexturePro(proj_png, proj_source, proj_destination[i], (Vector2){0, 0}, proj[i].angle,  WHITE);
-
-				}
-			}
-
-
-
-			//Draw Score
-			DrawText("Score: ", 650, 5, 20, WHITE);
-			DrawText(TextFormat("%u", score), 750, 5, 20, WHITE);
-
-			EndDrawing(); //zatwarqne na chetkata
+			inMenu = !inMenu; //if i press M, menu var will be inverted
 
 		}
 
 
 
 
+		if(inMenu){
+
+			gameMenu();
+
+		}else if(!inMenu){
+
+
+			if(gameRunning == 0){
+
+
+				gameOverMenu(&background, &backgroundY, &backgroundSpeed);
+
+				if(IsKeyPressed(KEY_R)){
+					gameRunning = 1;
+					setGameStart(&ship, aster, proj, &reward);
+				}
+
+
+
+
+
+
+			}else if(gameRunning){
+
+				rotation += 5;
+
+				BeginDrawing(); //2ri init na samoto risuwane
+
+				ClearBackground(BLACK);//set background color
+
+				backgroundY += (backgroundSpeed + score * DIFFICULTY_INDEX) * GetFrameTime(); // S = V*T
+
+				backgroundY = fmodf(backgroundY, (float)background.height); //towa prawi copy 1 da se wurne ot nachalo, a copy 2 da zastane pak nad nego; ne razbiram bash kak stawa, no copy 1 winagi trugwa ot nachaloto do kraq, a ne si smenqt mestata s copy 2
+
+
+				DrawTexture(background, 0, (int)backgroundY, WHITE);
+				DrawTexture(background, 0, (int)backgroundY - background.height, WHITE);
+
+				//spawn asteroids
+				//move ship
+				//check for shooting
+				//move proj
+				//move asteroids
+				//check collision
+
+				spawnObstacles(aster, &reward);
+
+				//dt is the delta time, made to make movement independent of FPS, get time since last frame:
+				dt = GetFrameTime();
+
+				moveShip(&ship, dt, &score);
+
+				shootWeapon(proj, &ship);
+
+				moveProjectile(proj, dt);
+
+				moveAsteroids(aster, dt, &score);
+
+				moveReward(&reward, dt);
+
+				checkCollisions(&ship, aster, proj, &reward);
+
+
+				//Draw Ship
+				//hitbox
+				//DrawCircle(ship.x, ship.y, ship.r, WHITE);
+				DrawTexturePro(ship_png, ship_source, ship_destination, (Vector2){(float)SHIP_WIDTH/2, (float)SHIP_HEIGHT/2}, ship.angle,  WHITE);
+
+
+				//Draw Asteroids
+				for(int i = 0; i < ASTEROID_COUNT; i++){
+
+					if(aster[i].isAlive){
+
+						//hitbox
+						//DrawCircle(aster[i].x, aster[i].y, aster[i].r, WHITE);	
+						DrawTexturePro(asteroid_png, aster_source, aster_destination[i], (Vector2){(float)ASTEROID_WIDTH/2, (float)ASTEROID_HEIGHT/2}, 0.0f, WHITE);
+
+
+					}
+				}
+
+
+				if(reward.isAlive){
+
+					//Draw Reward
+					//DrawCircle(reward.x, reward.y, reward.r, WHITE);	
+					DrawTexturePro(rew_png, reward_source, reward_destination, (Vector2){(float)REWARD_WIDTH/2, (float)REWARD_HEIGHT/2}, rotation, WHITE);	
+
+				}
+
+
+				//Draw Projectile
+				for(int i = 0; i < PROJECTILE_COUNT; i++){
+
+					if(proj[i].isAlive){
+
+						//hitbox
+						//DrawRectangle(proj[i].x, proj[i].y, proj[i].width, proj[i].height, WHITE);
+						DrawTexturePro(proj_png, proj_source, proj_destination[i], (Vector2){0, 0}, proj[i].angle,  WHITE);
+
+					}
+				}
+
+
+
+				//Draw Score
+				DrawText("Score: ", 650, 5, 20, WHITE);
+				DrawText(TextFormat("%u", score), 750, 5, 20, WHITE);
+
+				EndDrawing(); //zatwarqne na chetkata
+
+			}
+
+
+
+
+		}
 	}
 
 	UnloadTexture(background);
