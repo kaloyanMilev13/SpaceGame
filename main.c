@@ -33,17 +33,8 @@
 //hugging face lerobot
 
 
-//implement speed acceleration - done on 10.09.2026
-//implement shooting!!! - almost done on 7.09.26
-//implent background - done
-//implement real design - on 4th of september -> png files, maybe draw own
-//implement collision - done; 07.09.2026 - better collision method
-
-
 float dt;
 
-bool gameRunning;
-bool inMenu = 0;
 bool gameMode = 1;
 
 unsigned int score = 0;
@@ -52,6 +43,15 @@ unsigned int highscore = 0;
 float now;
 float lastTime = 0;
 float rewardCooldown = REWARD_COOLDOWN;
+
+typedef enum {
+
+	GAME_RUNNING, //0
+	GAME_MENU, //1
+	GAME_OVER, // 2
+	GAME_INTRO // 3
+
+} GameState;
 
 
 //circle
@@ -126,10 +126,11 @@ Rectangle reward_destination;
 
 
 
-void setGameStart(Player *ship, Obstacle aster[], Projectile proj[], Obstacle *reward){
+void setGameStart(Player *ship, Obstacle aster[], Projectile proj[], Obstacle *reward, GameState *gameState){
 
-
-	gameRunning = 1;
+	if(*gameState != GAME_INTRO)
+		*gameState = GAME_RUNNING;
+	
 	score = 0;
 	lastTime = GetTime();
 
@@ -428,7 +429,7 @@ void moveReward(Obstacle *reward, float dt){
 
 }
 
-void checkCollisions(Player *ship, Obstacle aster[], Projectile proj[], Obstacle *reward){
+void checkCollisions(Player *ship, Obstacle aster[], Projectile proj[], Obstacle *reward, GameState *gameState){
 
 
 	for(int i = 0; i < ASTEROID_COUNT; i++){
@@ -439,7 +440,7 @@ void checkCollisions(Player *ship, Obstacle aster[], Projectile proj[], Obstacle
 				aster[i].y + aster[i].r >= ship->y - ship->r && aster[i].y - aster[i].r <= ship->y + ship->r){
 			ship->isAlive = 0;
 			aster[i].isAlive = 0;
-			gameRunning = 0;	
+			*gameState = GAME_OVER;	
 		}
 
 
@@ -475,11 +476,49 @@ void checkCollisions(Player *ship, Obstacle aster[], Projectile proj[], Obstacle
 }
 
 
-void gameMenu(){
+void gameMenu(Texture2D *background, float *backgroundY, float *backgroundSpeed){
+
+
+	if(IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_DOWN)){
+
+		gameMode = !gameMode;
+
+	}
 
 	BeginDrawing();
 
-	DrawText("Game Menu", 200, 200, 50, WHITE);
+	*backgroundY += *backgroundSpeed * GetFrameTime(); // S = V*T
+
+	*backgroundY = fmodf(*backgroundY, (float)background->height);
+
+	DrawTexture(*background, 0, (int)*backgroundY, WHITE);
+	DrawTexture(*background, 0, (int)*backgroundY - background->height, WHITE);
+
+
+	DrawText("GAME MENU", 80, 50, 100, WHITE);
+
+	DrawText("DIFFICULTY: ", 120, 200, 50,  WHITE);
+
+	if(gameMode == 0){
+
+		DrawText(TextFormat("EASY"), 520, 200, 50, WHITE);
+
+	}else{
+
+		DrawText(TextFormat("HARD"), 520, 200, 50, WHITE);
+
+	}
+
+
+	DrawText("WASD - MOVE", 220, 300, 20, WHITE);
+	DrawText("M - MENU", 480, 300, 20, WHITE);
+
+	DrawText("SPACE - SHOOT", 220, 330, 20, WHITE);
+	DrawText("R -Restart", 480, 330, 20, WHITE);
+
+	DrawText("Press M To Return", 240, 400, 30, WHITE);
+
+
 
 	EndDrawing();
 
@@ -524,7 +563,15 @@ void gameOverMenu(Texture2D *background, float *backgroundY, float *backgroundSp
 
 int main(void){
 
+	GameState gameState = GAME_INTRO;
+
+	GameState previousState = gameState;
+
 	float rotation;
+
+	float introTime = 0.0f;
+	float alpha = introTime;
+	Color textColor;
 
 	float backgroundY = 0.0f;
 	float backgroundSpeed = 40.0f;
@@ -543,7 +590,7 @@ int main(void){
 
 	Obstacle reward;
 
-	setGameStart(&ship, aster, proj, &reward);
+	setGameStart(&ship, aster, proj, &reward, &gameState);
 
 
 
@@ -564,40 +611,77 @@ int main(void){
 
 
 
+
 	while(!WindowShouldClose()){
 
-		if(IsKeyPressed(KEY_M)){
-
-			inMenu = !inMenu; //if i press M, menu var will be inverted
-
-		}
+		dt = GetFrameTime();
 
 
+		switch (gameState) {
+
+			case GAME_INTRO: 
+
+				introTime += dt;
+
+				alpha = introTime;
+
+				if(alpha > 1.0f)
+					alpha = 1.0f;
+
+				textColor = Fade(WHITE, alpha);
+
+				BeginDrawing();
 
 
-		if(inMenu){
+				if(introTime < 0.5f){
 
-			gameMenu();
+					DrawText("WASD - MOVE", 100, 50, 80, textColor);
+					alpha = 0;
 
-		}else if(!inMenu){
+				}else if(introTime < 1.0f){
 
+					DrawText("SPACE - SHOOT", 100, 150, 80, textColor);
+					alpha = 0;
 
-			if(gameRunning == 0){
+				}else if(introTime < 1.5f ){
 
+					DrawText("R - Restart", 100, 250, 80, textColor);
+					alpha = 0;
 
-				gameOverMenu(&background, &backgroundY, &backgroundSpeed);
+				}else if(introTime < 2.0f){
 
-				if(IsKeyPressed(KEY_R)){
-					gameRunning = 1;
-					setGameStart(&ship, aster, proj, &reward);
+					DrawText("M - Menu", 100, 350, 80, textColor);
+
 				}
 
 
 
+				DrawText("Enter To START", 600, 480, 20, YELLOW);
+
+
+				EndDrawing();
+
+				if(IsKeyPressed(KEY_ENTER)){
+					previousState = gameState;
+					gameState = GAME_RUNNING;
+				}
+
+
+				break;
 
 
 
-			}else if(gameRunning){
+
+			case GAME_RUNNING:
+
+				if(IsKeyPressed(KEY_M)){
+
+					previousState = gameState; // = GAME_RUNNING
+					gameState = GAME_MENU; 
+
+				}
+
+
 
 				rotation += 5;
 
@@ -623,7 +707,6 @@ int main(void){
 				spawnObstacles(aster, &reward);
 
 				//dt is the delta time, made to make movement independent of FPS, get time since last frame:
-				dt = GetFrameTime();
 
 				moveShip(&ship, dt, &score);
 
@@ -635,7 +718,7 @@ int main(void){
 
 				moveReward(&reward, dt);
 
-				checkCollisions(&ship, aster, proj, &reward);
+				checkCollisions(&ship, aster, proj, &reward, &gameState);
 
 
 				//Draw Ship
@@ -687,13 +770,61 @@ int main(void){
 
 				EndDrawing(); //zatwarqne na chetkata
 
-			}
+
+				break;
+
+
+			case GAME_MENU: 
+
+				gameMenu(&background, &backgroundY, &backgroundSpeed);
+
+				if(IsKeyPressed(KEY_M)){
+
+					gameState = previousState;
+				}
 
 
 
+				break;
+
+
+
+			case GAME_OVER:
+
+				gameOverMenu(&background, &backgroundY, &backgroundSpeed);
+
+				if(IsKeyPressed(KEY_M)){
+
+					previousState = gameState;
+					gameState = GAME_MENU; 
+
+				}
+
+
+				if(IsKeyPressed(KEY_R)){
+					gameState = GAME_RUNNING;
+					setGameStart(&ship, aster, proj, &reward, &gameState);
+				}
+
+
+				break;
 
 		}
+
+
+
+
+
+
+
+
+
 	}
+
+
+
+
+
 
 	UnloadTexture(background);
 	UnloadTexture(ship_png);
