@@ -126,10 +126,7 @@ Rectangle reward_destination;
 
 
 
-void setGameStart(Player *ship, Obstacle aster[], Projectile proj[], Obstacle *reward, GameState *gameState){
-
-	if(*gameState != GAME_INTRO)
-		*gameState = GAME_RUNNING;
+void setGameStart(Player *ship, Obstacle aster[], Projectile proj[], Obstacle *reward){
 	
 	score = 0;
 	lastTime = GetTime();
@@ -163,7 +160,7 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[], Obstacle *r
 	//	ship->y = (float)SCREEN_HEIGHT/2 - (float)SHIP_HEIGHT/2;
 
 	ship->x = (float)SCREEN_WIDTH/2;
-	ship->y = (float)SCREEN_HEIGHT/2 - SHIP_RADIUS*2;
+	ship->y = 400;
 
 	ship->angle = 0;
 
@@ -590,7 +587,7 @@ int main(void){
 
 	Obstacle reward;
 
-	setGameStart(&ship, aster, proj, &reward, &gameState);
+	setGameStart(&ship, aster, proj, &reward);
 
 
 
@@ -615,6 +612,22 @@ int main(void){
 	while(!WindowShouldClose()){
 
 		dt = GetFrameTime();
+
+		if(IsKeyPressed(KEY_M)){
+
+	
+			if(gameState == GAME_MENU){
+
+				gameState = previousState;
+
+			}else if(gameState == GAME_RUNNING || gameState == GAME_OVER){
+
+				previousState = gameState;
+				gameState = GAME_MENU;
+
+			}
+
+		}
 
 
 		switch (gameState) {
@@ -662,7 +675,6 @@ int main(void){
 				EndDrawing();
 
 				if(IsKeyPressed(KEY_ENTER)){
-					previousState = gameState;
 					gameState = GAME_RUNNING;
 				}
 
@@ -673,15 +685,6 @@ int main(void){
 
 
 			case GAME_RUNNING:
-
-				if(IsKeyPressed(KEY_M)){
-
-					previousState = gameState; // = GAME_RUNNING
-					gameState = GAME_MENU; 
-
-				}
-
-
 
 				rotation += 5;
 
@@ -778,13 +781,6 @@ int main(void){
 
 				gameMenu(&background, &backgroundY, &backgroundSpeed);
 
-				if(IsKeyPressed(KEY_M)){
-
-					gameState = previousState;
-				}
-
-
-
 				break;
 
 
@@ -793,19 +789,11 @@ int main(void){
 
 				gameOverMenu(&background, &backgroundY, &backgroundSpeed);
 
-				if(IsKeyPressed(KEY_M)){
-
-					previousState = gameState;
-					gameState = GAME_MENU; 
-
-				}
-
-
 				if(IsKeyPressed(KEY_R)){
+					
+					setGameStart(&ship, aster, proj, &reward);
 					gameState = GAME_RUNNING;
-					setGameStart(&ship, aster, proj, &reward, &gameState);
 				}
-
 
 				break;
 
