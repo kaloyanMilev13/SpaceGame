@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <raylib.h>
 #include <math.h>
-
+#include <time.h> //for srand
 
 #define SCREEN_WIDTH 800 //1000
 #define SCREEN_HEIGHT 500 //625
@@ -27,29 +27,43 @@
 #define PROJECTILE_COUNT 1
 
 #define DIFFICULTY_INDEX 7.0f
-#define REWARD_COOLDOWN 10.0f;
+#define REWARD_COOLDOWN 10.0f
 
+#define SHIELD_COOLDOWN 5.0f
+#define SHIELD_RADIUS 35.0f
+
+
+#define IMPACT_DURATION 0.5f
+
+//check:
 //gymnasium frama foundation
 //hugging face lerobot
 
 
 float dt;
 
-bool gameMode = 1;
+bool gameMode = 0;
 
 unsigned int score = 0;
 unsigned int highscore = 0;
 
-float now;
-float lastTime = 0;
+float rewardNow;
+float rewardLastTime = 0;
 float rewardCooldown = REWARD_COOLDOWN;
+
+float shieldNow;
+float shieldLastTime = 0;
+float shieldCooldown = SHIELD_COOLDOWN;
+
+float impactTime = 0.0f;
+
 
 typedef enum {
 
-	GAME_RUNNING, //0
-	GAME_MENU, //1
-	GAME_OVER, // 2
-	GAME_INTRO // 3
+	GAME_RUNNING, 
+	GAME_MENU, 
+	GAME_OVER, 
+	GAME_INTRO 
 
 } GameState;
 
@@ -68,10 +82,12 @@ typedef struct {
 
 	float angle;
 
+	bool hasShield;
+
 } Player;
 
 
-//make it a circle - 07.09.2026
+//circle
 typedef struct {
 
 	float x;
@@ -127,9 +143,9 @@ Rectangle reward_destination;
 
 
 void setGameStart(Player *ship, Obstacle aster[], Projectile proj[], Obstacle *reward){
-	
+
 	score = 0;
-	lastTime = GetTime();
+	rewardLastTime = GetTime();
 
 	//init asteroids
 	for(int i = 0; i < ASTEROID_COUNT; i++){
@@ -153,6 +169,7 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[], Obstacle *r
 	//init ship
 	ship->r = SHIP_RADIUS;
 	ship->isAlive = 1;
+	ship->hasShield = 0;
 	ship->speed = 380.0f;
 
 	// 	for rect ship	
@@ -180,6 +197,14 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[], Obstacle *r
 	for(int i = 0; i < PROJECTILE_COUNT; i++){
 		proj[i].isAlive = 0;
 		proj[i].speed = 800.0f;
+
+		proj[i].x = ship->x;
+		proj[i].y = ship->y;
+
+		proj[i].angle = 0;
+		proj[i].dx = 0;
+		proj[i].dy = 0;
+
 		proj_destination[i].x = proj[i].x;
 		proj_destination[i].y = proj[i].y;
 		proj_destination[i].width = PROJECTILE_WIDTH;
@@ -211,13 +236,25 @@ void setGameStart(Player *ship, Obstacle aster[], Projectile proj[], Obstacle *r
 
 void moveShip(Player *ship, float dt,  unsigned int *score){
 
+	shieldNow = GetTime();
+
+
+	if(shieldNow - shieldLastTime >= SHIELD_COOLDOWN && ship->hasShield){
+
+		ship->hasShield = 0;
+
+		shieldLastTime = shieldNow;
+
+	}
+
+
 	float dx = 0.0f;
 	float dy = 0.0f;
 
 
 	if(IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)){
 
-		if(ship->x - ship->r > 0){
+		if(ship->x - ship->r - 20 > 0){
 
 			dx -= 1.0f;
 
@@ -228,7 +265,7 @@ void moveShip(Player *ship, float dt,  unsigned int *score){
 
 	if(IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)){
 
-		if(ship->x + ship->r < SCREEN_WIDTH){
+		if(ship->x + ship->r + 20 < SCREEN_WIDTH){
 
 			dx += 1.0f;
 		}
@@ -239,7 +276,7 @@ void moveShip(Player *ship, float dt,  unsigned int *score){
 
 	if(IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)){
 
-		if(ship->y + ship->r < SCREEN_HEIGHT){
+		if(ship->y + ship->r + 20 < SCREEN_HEIGHT){
 
 			dy += 1.0f;
 
@@ -252,7 +289,7 @@ void moveShip(Player *ship, float dt,  unsigned int *score){
 
 	if(IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)){
 
-		if(ship->y - ship->r > 0){
+		if(ship->y - ship->r - 20 > 0){
 
 			dy -= 1.0f ;
 
@@ -295,17 +332,19 @@ void moveShip(Player *ship, float dt,  unsigned int *score){
 
 void spawnObstacles(Obstacle aster[], Obstacle *reward){
 
-	now = GetTime();
+	rewardNow = GetTime();
 
-	if(now - lastTime >= rewardCooldown && reward->isAlive == 0){
+	if(rewardNow - rewardLastTime >= rewardCooldown && reward->isAlive == 0){
 
 		reward->isAlive = 1;
 
 		reward->x = rand() % SCREEN_WIDTH;
 		reward->y = -(20 + REWARD_HEIGHT + rand() % 10); 
 
-		lastTime = now;
+		rewardLastTime = rewardNow;
 	}
+
+
 
 
 
@@ -335,7 +374,7 @@ void moveAsteroids(Obstacle aster[], float dt, unsigned int *score){
 
 	for(int i = 0; i < ASTEROID_COUNT; i++){
 
-		if(aster[i].y + ASTEROID_HEIGHT  < SCREEN_HEIGHT){
+		if(aster[i].y - ASTEROID_HEIGHT  < SCREEN_HEIGHT){
 
 			aster[i].y += (aster[i].speed + (*score * DIFFICULTY_INDEX)) * dt;
 
@@ -388,7 +427,7 @@ void moveProjectile(Projectile proj[], float dt){
 
 	for(int i = 0; i < PROJECTILE_COUNT; i++){
 
-		if(!(proj[i].x < 0 || proj[i].x > SCREEN_WIDTH || proj[i].y < 0 || proj[i].y > SCREEN_HEIGHT)){
+		if(!(proj[i].x < 0 || proj[i].x > SCREEN_WIDTH || proj[i].y < 0 || proj[i].y > SCREEN_HEIGHT) && proj[i].isAlive){
 
 			proj[i].x += proj[i].dx * proj[i].speed * dt;
 			proj[i].y += proj[i].dy * proj[i].speed * dt;
@@ -410,7 +449,7 @@ void moveProjectile(Projectile proj[], float dt){
 
 void moveReward(Obstacle *reward, float dt){
 
-	if(reward->y + REWARD_HEIGHT < SCREEN_HEIGHT){
+	if(reward->y - REWARD_HEIGHT < SCREEN_HEIGHT){
 
 		reward->y += reward->speed * dt;
 
@@ -428,21 +467,12 @@ void moveReward(Obstacle *reward, float dt){
 
 void checkCollisions(Player *ship, Obstacle aster[], Projectile proj[], Obstacle *reward, GameState *gameState){
 
+	float dx, dy, combinedRadius;
+
 
 	for(int i = 0; i < ASTEROID_COUNT; i++){
 
-
-		//Circle detection - asteroid and ship
-		if(aster[i].isAlive && aster[i].x + aster[i].r >= ship->x - ship->r && aster[i].x - aster[i].r <= ship->x + ship->r  && 
-				aster[i].y + aster[i].r >= ship->y - ship->r && aster[i].y - aster[i].r <= ship->y + ship->r){
-			ship->isAlive = 0;
-			aster[i].isAlive = 0;
-			*gameState = GAME_OVER;	
-		}
-
-
-
-		//Circle detection - asteroid and projectile
+		//Circle and rect detection - asteroid and projectile
 		for(int j = 0; j < PROJECTILE_COUNT; j++){
 
 			if(proj[j].isAlive && aster[i].isAlive && aster[i].x + aster[i].r >= proj[j].x && aster[i].x - aster[i].r <= proj[j].x + PROJECTILE_WIDTH &&
@@ -451,21 +481,71 @@ void checkCollisions(Player *ship, Obstacle aster[], Projectile proj[], Obstacle
 
 				aster[i].isAlive = 0;
 				proj[j].isAlive = 0;
-				score++; //not sure
+				score++;
 
 
 			}
 
 		}
 
+
+
+
+		//Circle detection - asteroid and ship
+		dx = aster[i].x - ship->x; // a
+		dy = aster[i].y - ship->y; // b
+		combinedRadius = aster[i].r + ship->r; // c
+
+
+		if(ship->hasShield){
+
+			combinedRadius = aster[i].r + SHIELD_RADIUS; //shield radius
+
+			if(aster[i].isAlive && (dx * dx + dy * dy <= combinedRadius * combinedRadius)){
+
+				aster[i].isAlive = 0;
+				ship->hasShield = 0;
+
+			}
+
+
+		} else if(aster[i].isAlive && (dx * dx + dy * dy <= combinedRadius * combinedRadius)){ // a^2 + b^2 = c^2, pythagorean theorem
+
+
+			ship->isAlive = 0;
+
+			for(int k = 0; k < ASTEROID_COUNT; k++){
+
+				if(k != i)
+					aster[k].isAlive = 0; //remove every asteroid except the one that hit the ship
+
+			}
+
+			reward->isAlive = 0;
+
+			impactTime = IMPACT_DURATION; //set impact time to 0.5f
+
+			return;
+
+			//*gameState = GAME_OVER;    // will be set in main	
+
+		}
+
 	}
 
 
-	if(reward->isAlive && ship->isAlive && reward->x + reward->r >= ship->x - ship->r && reward->x - reward->r <= ship->x + ship->r &&
-			reward->y + reward->r >= ship->y - ship->r && reward->y - reward->r <= ship->y + ship->r){
+	//cicle detection for ship and reward, again with the pythegoren method
+	dx = reward->x  - ship->x;
+	dy = reward->y - ship->y;
+
+	combinedRadius = reward->r + ship->r;
+
+
+	if(reward->isAlive && ship->isAlive && (dx * dx + dy *dy <= combinedRadius * combinedRadius)){ //a^2 + b^2 = c^2
 
 		reward->isAlive = 0;
-		score += 20;
+		ship->hasShield = 1;
+		shieldLastTime = GetTime();
 
 	}
 
@@ -507,11 +587,20 @@ void gameMenu(Texture2D *background, float *backgroundY, float *backgroundSpeed)
 	}
 
 
+	//up arrow
+	DrawLineEx((Vector2){680, 210}, (Vector2){690, 195}, 3, WHITE);
+	DrawLineEx((Vector2){700, 210}, (Vector2){690, 195}, 3, WHITE);
+
+	// down arrow
+	DrawLineEx((Vector2){680, 230}, (Vector2){690, 245}, 3, WHITE);
+	DrawLineEx((Vector2){690, 245}, (Vector2){700, 230}, 3, WHITE);
+
+
 	DrawText("WASD - MOVE", 220, 300, 20, WHITE);
 	DrawText("M - MENU", 480, 300, 20, WHITE);
 
 	DrawText("SPACE - SHOOT", 220, 330, 20, WHITE);
-	DrawText("R -Restart", 480, 330, 20, WHITE);
+	DrawText("R/Enter - Restart", 480, 330, 20, WHITE);
 
 	DrawText("Press M To Return", 240, 400, 30, WHITE);
 
@@ -541,17 +630,16 @@ void gameOverMenu(Texture2D *background, float *backgroundY, float *backgroundSp
 	DrawTexture(*background, 0, (int)*backgroundY - background->height, WHITE);
 
 
-
 	DrawText("GAME OVER!!", 80, 50, 100, WHITE);
 
 	DrawText("Score: ", 200, 200, 50, WHITE);
 	DrawText(TextFormat("%u", score), 600, 200, 50, WHITE);
 
-	DrawText("High Score: ", 200, 250, 50, WHITE);
-	DrawText(TextFormat("%u", highscore), 600, 250, 50, WHITE);
+	DrawText("High Score: ", 200, 280, 50, WHITE);
+	DrawText(TextFormat("%u", highscore), 600, 280, 50, WHITE);
 
-
-	DrawText("Press R To Restart", 240, 400, 30, WHITE);
+	DrawText("Press R To Restart", 240, 380, 30, WHITE);
+	DrawText("Press M For MENU", 280, 430, 25, WHITE);
 
 	EndDrawing();
 
@@ -560,11 +648,9 @@ void gameOverMenu(Texture2D *background, float *backgroundY, float *backgroundSp
 
 int main(void){
 
-	GameState gameState = GAME_INTRO;
+	srand(time(NULL));
 
-	GameState previousState = gameState;
-
-	float rotation;
+	float rotation = 0.0f;
 
 	float introTime = 0.0f;
 	float alpha = introTime;
@@ -576,7 +662,7 @@ int main(void){
 	//INIT WINDOW
 	InitWindow(SCREEN_WIDTH,SCREEN_HEIGHT, "SpaceGame"); //init
 	SetTargetFPS(60); //set fps
-
+		
 
 	//INIT OBJECTS
 	Player ship;
@@ -607,32 +693,39 @@ int main(void){
 	reward_source = (Rectangle) {0, 0, rew_png.width, rew_png.height};
 
 
+	//game state
+	GameState gameState = GAME_INTRO;
+	GameState previousState = gameState;
+
+
+
 
 
 	while(!WindowShouldClose()){
-
+		
+		//dt is the delta time, made to make movement independent of FPS, get time since last frame:
 		dt = GetFrameTime();
 
-		if(IsKeyPressed(KEY_M)){
 
-	
-			if(gameState == GAME_MENU){
+		if((IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_M)) && gameState == GAME_MENU){
 
-				gameState = previousState;
+			gameState = previousState;
 
-			}else if(gameState == GAME_RUNNING || gameState == GAME_OVER){
+		}else if(IsKeyPressed(KEY_M) && (gameState == GAME_RUNNING || gameState == GAME_OVER)){
 
-				previousState = gameState;
-				gameState = GAME_MENU;
-
-			}
+			previousState = gameState;
+			gameState = GAME_MENU;
 
 		}
 
 
+
+
 		switch (gameState) {
 
-			case GAME_INTRO: 
+			case GAME_INTRO:
+
+
 
 				introTime += dt;
 
@@ -645,32 +738,30 @@ int main(void){
 
 				BeginDrawing();
 
+				backgroundY += backgroundSpeed * GetFrameTime(); // S = V*T
 
-				if(introTime < 0.5f){
+				backgroundY = fmodf(backgroundY, (float)background.height);
 
-					DrawText("WASD - MOVE", 100, 50, 80, textColor);
-					alpha = 0;
+				DrawTexture(background, 0, (int)backgroundY, WHITE);
+				DrawTexture(background, 0, (int)backgroundY - background.height, WHITE);	
 
-				}else if(introTime < 1.0f){
 
-					DrawText("SPACE - SHOOT", 100, 150, 80, textColor);
-					alpha = 0;
 
-				}else if(introTime < 1.5f ){
+				DrawText("WASD - MOVE", 100, 70, 50, textColor);
 
-					DrawText("R - Restart", 100, 250, 80, textColor);
-					alpha = 0;
-
-				}else if(introTime < 2.0f){
-
-					DrawText("M - Menu", 100, 350, 80, textColor);
-
+				if (introTime >= 0.5f){
+					DrawText("SPACE - SHOOT", 100, 160, 50, textColor);
 				}
 
+				if (introTime >= 1.0f){
+					DrawText("R/Enter - Restart", 100, 250, 50, textColor);
+				}
 
+				if (introTime >= 1.5f){
+					DrawText("M - Menu", 100, 340, 50, textColor);
+				}
 
-				DrawText("Enter To START", 600, 480, 20, YELLOW);
-
+				DrawText("Enter To START", 540, 440, 25, YELLOW);
 
 				EndDrawing();
 
@@ -686,7 +777,46 @@ int main(void){
 
 			case GAME_RUNNING:
 
-				rotation += 5;
+				rotation += 300.0f * dt;
+
+
+				//spawn asteroids
+				//move ship
+				//check for shooting
+				//move proj
+				//move asteroids
+				//check collision
+
+
+				if(ship.isAlive){
+
+					spawnObstacles(aster, &reward);
+
+					moveShip(&ship, dt, &score);
+
+					shootWeapon(proj, &ship);
+
+					moveProjectile(proj, dt);
+
+					moveAsteroids(aster, dt, &score);
+
+					moveReward(&reward, dt);
+
+					checkCollisions(&ship, aster, proj, &reward, &gameState);
+				}else{
+
+					impactTime -= dt; //decrease impact time
+
+					if(impactTime <= 0.0f){ //clmp the impact time, so its not below 0
+
+
+						impactTime = 0.0f;
+						gameState = GAME_OVER; //change game state here
+
+					}
+
+				}
+
 
 				BeginDrawing(); //2ri init na samoto risuwane
 
@@ -700,48 +830,43 @@ int main(void){
 				DrawTexture(background, 0, (int)backgroundY, WHITE);
 				DrawTexture(background, 0, (int)backgroundY - background.height, WHITE);
 
-				//spawn asteroids
-				//move ship
-				//check for shooting
-				//move proj
-				//move asteroids
-				//check collision
 
-				spawnObstacles(aster, &reward);
-
-				//dt is the delta time, made to make movement independent of FPS, get time since last frame:
-
-				moveShip(&ship, dt, &score);
-
-				shootWeapon(proj, &ship);
-
-				moveProjectile(proj, dt);
-
-				moveAsteroids(aster, dt, &score);
-
-				moveReward(&reward, dt);
-
-				checkCollisions(&ship, aster, proj, &reward, &gameState);
+				if (ship.isAlive || (int)(impactTime * 10) % 2 == 0) { //if ship is alive, c even skips the second part of the condition. when it is not alive, it starts checking if the num is odd or even for flickering effect
 
 
-				//Draw Ship
-				//hitbox
-				//DrawCircle(ship.x, ship.y, ship.r, WHITE);
-				DrawTexturePro(ship_png, ship_source, ship_destination, (Vector2){(float)SHIP_WIDTH/2, (float)SHIP_HEIGHT/2}, ship.angle,  WHITE);
+					//Draw Ship
+					//hitbox
+					//DrawCircle(ship.x, ship.y, ship.r, WHITE);
+					DrawTexturePro(ship_png, ship_source, ship_destination, (Vector2){(float)SHIP_WIDTH/2, (float)SHIP_HEIGHT/2}, ship.angle,  WHITE);
 
 
-				//Draw Asteroids
-				for(int i = 0; i < ASTEROID_COUNT; i++){
+					//Draw shield
+					if(ship.hasShield){
 
-					if(aster[i].isAlive){
+						DrawCircleV((Vector2) {ship.x, ship.y}, SHIELD_RADIUS, Fade(SKYBLUE, 0.15f));
 
-						//hitbox
-						//DrawCircle(aster[i].x, aster[i].y, aster[i].r, WHITE);	
-						DrawTexturePro(asteroid_png, aster_source, aster_destination[i], (Vector2){(float)ASTEROID_WIDTH/2, (float)ASTEROID_HEIGHT/2}, 0.0f, WHITE);
-
+						DrawCircleLinesV((Vector2) {ship.x, ship.y}, SHIELD_RADIUS, Fade(SKYBLUE, 0.7f));
 
 					}
+
+
+					//Draw Asteroids
+					for(int i = 0; i < ASTEROID_COUNT; i++){
+
+						if(aster[i].isAlive){
+
+							//hitbox
+							//DrawCircle(aster[i].x, aster[i].y, aster[i].r, WHITE);	
+							DrawTexturePro(asteroid_png, aster_source, aster_destination[i], (Vector2){(float)ASTEROID_WIDTH/2, (float)ASTEROID_HEIGHT/2}, 0.0f, WHITE);
+
+
+						}
+					}
+
+
 				}
+
+
 
 
 				if(reward.isAlive){
@@ -789,8 +914,8 @@ int main(void){
 
 				gameOverMenu(&background, &backgroundY, &backgroundSpeed);
 
-				if(IsKeyPressed(KEY_R)){
-					
+				if(IsKeyPressed(KEY_R) || IsKeyPressed(KEY_ENTER)){
+
 					setGameStart(&ship, aster, proj, &reward);
 					gameState = GAME_RUNNING;
 				}
@@ -810,10 +935,7 @@ int main(void){
 	}
 
 
-
-
-
-
+	
 	UnloadTexture(background);
 	UnloadTexture(ship_png);
 	UnloadTexture(asteroid_png);
@@ -826,4 +948,3 @@ int main(void){
 	return 0;
 
 }
-
