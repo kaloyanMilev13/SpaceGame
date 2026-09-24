@@ -14,11 +14,11 @@ This folder holds the analysis, design, and validation materials for SpaceGame. 
 - Game flow diagrams:
   - [01 — Whole game](design/done%20flows/01-whole-game.drawio.svg)
   - [02 — Menu navigation](design/done%20flows/02-menu-navigation.drawio.svg)
-  - [03 — Running frame](design/done%20flows/03-running-frame.drawio.svg)
-  - [04 — Ship movement](design/done%20flows/04-ship-movement.drawio.svg)
+  - [03 — Running frame](design/done%20flows/03.drawio.svg)
+  - [04 — Ship movement](design/done%20flows/04.drawio.svg)
   - [05 — Shooting and projectiles](design/done%20flows/05-shooting-and-projectile.drawio.svg)
   - [06 — Asteroids and rewards](design/done%20flows/06-asteroids-and-rewards.drawio.svg)
-  - [07 — Collisions and scoring](design/done%20flows/07-collisions-and-scoring.drawio.svg)
+  - [07 — Collisions and scoring](design/done%20flows/07-collisions-and-scoring-updated.drawio.svg)
 
 ## Validation
 
